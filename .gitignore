@@ -205,3 +205,32 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific
+# -----------------------------------------------------------------------------
+
+# Environment variables
+# Keep .env.example for reference, ignore actual .env
+!.env.example
+
+# Document upload directory
+# Contains sensitive user-uploaded documents
+data/documents/
+
+# Streamlit cache
+.streamlit/cache/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+.Trashes
+
+# Windows
+desktop.ini
+Thumbs.db
+
+# Logs
+logs/

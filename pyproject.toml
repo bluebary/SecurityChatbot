@@ -1,0 +1,51 @@
+[project]
+name = "security-chatbot"
+version = "0.1.0"
+description = "AI-based RAG Security Chatbot using Google Gemini File Search API"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT License" }
+authors = [
+  { name = "bluebary" },
+]
+dependencies = [
+  "google-generativeai>=0.8.0",
+  "streamlit>=1.30.0",
+  "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "black>=23.0.0",
+  "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = ["E", "W", "F", "I", "N", "D", "UP", "B", "A"]
+ignore = []
+src = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=src/security_chatbot --cov-report=term-missing"
