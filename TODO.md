@@ -43,7 +43,7 @@
   - 파일 유효성 검증 함수 (파일 형식, 크기 제한 100MB)
   - 단일 파일 업로드 함수 (File Search Store에 직접 업로드)
   - 배치 파일 업로드 함수
-  - Operation 폴링 및 인덱싱 완료 대기 함수
+  - Operation 폴링 및 인덱싱 완료 대기 함수(Option으로 사용)
   - 청킹 설정 적용 (max_tokens_per_chunk, overlap)
 - [ ] 에러 핸들링 추가
   - 파일 크기 초과
