@@ -22,6 +22,8 @@ logging.basicConfig(
 
 # Gemini API 설정
 GEMINI_API_KEY: Final[str] = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL_NAME: Final[str] = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash-exp")
+API_TIMEOUT_SECONDS: Final[int] = int(os.getenv("API_TIMEOUT_SECONDS", "60"))
 
 # 환경 변수 검증
 if not GEMINI_API_KEY:

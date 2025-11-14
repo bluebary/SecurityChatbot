@@ -48,33 +48,65 @@ def render_chat_history() -> None:
 def process_chat_input() -> None:
     """
     사용자 입력을 처리하고, 유효성 검사 후 세션에 메시지를 추가하며,
-    기본 에코 봇 응답을 생성하여 세션에 추가합니다.
-    RAG 활성화 여부에 따라 다른 응답 로직을 사용합니다.
+    RAG 활성화 여부에 따라 실제 RAG 응답 또는 에코 봇 응답을 생성합니다.
     """
     from security_chatbot.chat import session
+    from security_chatbot.rag.query_handler import query_with_rag
+
     user_input: Union[str, None] = st.chat_input("메시지를 입력하세요...", disabled=session.get_processing_files_status())
 
     if user_input:
         current_time = datetime.now()
         session.add_chat_message(role="user", content=user_input, timestamp=current_time)
 
-        # Simulate RAG response or echo bot
+        # RAG 활성화 여부에 따른 응답 생성
         if session.get_rag_engine_active_status():
-            # Placeholder for RAG query
-            with st.chat_message("assistant"):
-                with st.spinner("생각 중..."):
-                    time.sleep(2)  # Simulate RAG processing time
-                assistant_response = f"RAG 기반 답변: '{user_input}'에 대한 보안 정보를 찾고 있습니다. (이것은 현재 에코 응답입니다.)"
-                citations = ["보안 정책 문서 v1.0", "최신 위협 보고서 2023"]  # Mock citations
-                st.markdown(assistant_response)
-                st.markdown(f"<p class='chat-timestamp'>{datetime.now().isoformat()}</p>", unsafe_allow_html=True)
-                st.markdown("<div class='chat-citation'>", unsafe_allow_html=True)
-                st.markdown("**출처:**")
-                for citation in citations:
-                    st.markdown(f"- {citation}")
-                st.markdown("</div>", unsafe_allow_html=True)
-            session.add_chat_message(role="assistant", content=assistant_response, timestamp=datetime.now(), citations=citations)
+            # 실제 RAG 쿼리 실행
+            _, store_resource_name = session.get_file_store_info()
+
+            if not store_resource_name:
+                # Store가 없는 경우 에러 메시지
+                with st.chat_message("assistant"):
+                    error_message = "⚠️ File Search Store가 설정되지 않았습니다. 문서를 먼저 업로드해주세요."
+                    st.markdown(error_message)
+                    st.markdown(f"<p class='chat-timestamp'>{datetime.now().isoformat()}</p>", unsafe_allow_html=True)
+                session.add_chat_message(role="assistant", content=error_message, timestamp=datetime.now())
+            else:
+                # RAG 쿼리 실행
+                with st.chat_message("assistant"):
+                    with st.spinner("보안 문서를 분석하고 답변을 생성하는 중..."):
+                        rag_response = query_with_rag(query=user_input, store_name=store_resource_name)
+
+                    if rag_response["success"]:
+                        # 성공적인 응답
+                        assistant_response = rag_response["content"]
+                        citations = rag_response["citations"]
+
+                        st.markdown(assistant_response)
+                        st.markdown(f"<p class='chat-timestamp'>{datetime.now().isoformat()}</p>", unsafe_allow_html=True)
+
+                        # 출처 정보 표시
+                        if citations:
+                            st.markdown("<div class='chat-citation'>", unsafe_allow_html=True)
+                            st.markdown("**출처:**")
+                            for citation in citations:
+                                st.markdown(f"- {citation}")
+                            st.markdown("</div>", unsafe_allow_html=True)
+
+                        session.add_chat_message(
+                            role="assistant",
+                            content=assistant_response,
+                            timestamp=datetime.now(),
+                            citations=citations
+                        )
+                    else:
+                        # 오류 발생
+                        error_message = f"❌ 오류가 발생했습니다: {rag_response.get('error', '알 수 없는 오류')}"
+                        st.error(error_message)
+                        st.markdown(f"<p class='chat-timestamp'>{datetime.now().isoformat()}</p>", unsafe_allow_html=True)
+                        session.add_chat_message(role="assistant", content=error_message, timestamp=datetime.now())
         else:
+            # RAG 비활성화 시 에코 봇
             with st.chat_message("assistant"):
                 with st.spinner("생각 중..."):
                     time.sleep(1)  # Simulate echo bot processing time
