@@ -17,6 +17,7 @@ from security_chatbot.chat import session
 from security_chatbot.chat import ui_components
 from security_chatbot.rag.store_manager import FileSearchStoreManager
 from security_chatbot.rag.document_manager import DocumentManager
+from security_chatbot.utils.error_handler import error_handler
 
 # --- Custom CSS ---
 CUSTOM_CSS = """
@@ -261,7 +262,13 @@ def _handle_individual_document_deletion(file_name: str, corpus_file_resource_na
             st.error(f"❌ 문서 '{file_name}' 삭제에 실패했습니다. 로그를 확인해주세요.")
 
     except Exception as e:
-        st.error(f"❌ 문서 '{file_name}' 삭제 중 예상치 못한 오류 발생: {e}")
+        error_info = error_handler.handle_error(e, f"문서 삭제 ('{file_name}')")
+        if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+            st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+        elif error_info['severity'] == 'WARNING':
+            st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+        elif error_info['severity'] == 'INFO':
+            st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
     finally:
         # 확인 상태 초기화
         if 'confirm_delete_file_name' in st.session_state:
@@ -283,7 +290,13 @@ def _handle_delete_all_documents() -> None:
             else:
                 st.warning(f"⚠️ File Search Store '{store_display_name}' 삭제에 실패했거나 찾을 수 없습니다.")
         except Exception as e:
-            st.error(f"❌ File Search Store 삭제 중 오류 발생: {e}")
+            error_info = error_handler.handle_error(e, "File Search Store 삭제")
+            if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+            elif error_info['severity'] == 'WARNING':
+                st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+            elif error_info['severity'] == 'INFO':
+                st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
 
     session.clear_uploaded_files_metadata()
     session.clear_file_store_info()
@@ -424,10 +437,22 @@ def _handle_document_upload(uploaded_files: list[st.runtime.uploaded_file_manage
                         st.error(f"❌ File Search Store '{store_display_name}' 생성 실패")
                         return
                 except GoogleAPIError as e:
-                    st.error(f"❌ Google API 오류 (스토어 생성): {e}")
+                    error_info = error_handler.handle_error(e, "File Search Store 생성")
+                    if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                        st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'WARNING':
+                        st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'INFO':
+                        st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
                     return
                 except Exception as e:
-                    st.error(f"❌ 스토어 생성 중 예상치 못한 오류 발생: {e}")
+                    error_info = error_handler.handle_error(e, "File Search Store 생성")
+                    if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                        st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'WARNING':
+                        st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'INFO':
+                        st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
                     return
         else:
             st.info(f"📦 기존 File Search Store 사용: '{store_display_name}' (ID: {store_resource_name.split('/')[-1]})")
@@ -476,13 +501,31 @@ def _handle_document_upload(uploaded_files: list[st.runtime.uploaded_file_manage
                         st.warning(f"⚠️ '{uploaded_file.name}' 업로드 실패")
 
                 except ValueError as ve:
-                    st.error(f"❌ '{uploaded_file.name}' 처리 오류: {ve}")
+                    error_info = error_handler.handle_error(ve, f"파일 검증 및 업로드 ('{uploaded_file.name}')")
+                    if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                        st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'WARNING':
+                        st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'INFO':
+                        st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
                     failed_uploads.append(uploaded_file.name)
                 except GoogleAPIError as e:
-                    st.error(f"❌ Google API 오류 ('{uploaded_file.name}' 업로드): {e}")
+                    error_info = error_handler.handle_error(e, f"파일 업로드 ('{uploaded_file.name}')")
+                    if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                        st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'WARNING':
+                        st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'INFO':
+                        st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
                     failed_uploads.append(uploaded_file.name)
                 except Exception as e:
-                    st.error(f"❌ '{uploaded_file.name}' 처리 중 예상치 못한 오류 발생: {e}")
+                    error_info = error_handler.handle_error(e, f"파일 업로드 ('{uploaded_file.name}')")
+                    if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+                        st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'WARNING':
+                        st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+                    elif error_info['severity'] == 'INFO':
+                        st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
                     failed_uploads.append(uploaded_file.name)
                 finally:
                     if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
@@ -497,7 +540,13 @@ def _handle_document_upload(uploaded_files: list[st.runtime.uploaded_file_manage
             st.error(f"❌ {len(failed_uploads)}개 파일 업로드 실패: {', '.join(failed_uploads)}")
 
     except Exception as e:
-        st.error(f"❌ 업로드 프로세스 중 오류 발생: {e}")
+        error_info = error_handler.handle_error(e, "문서 업로드 프로세스")
+        if error_info['severity'] == 'CRITICAL' or error_info['severity'] == 'ERROR':
+            st.error(f"❌ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+        elif error_info['severity'] == 'WARNING':
+            st.warning(f"⚠️ {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
+        elif error_info['severity'] == 'INFO':
+            st.info(f"💡 {error_info['message']}\n\n💡 해결 방법: {error_info['solution']}")
     finally:
         session.set_processing_files_status(False)
         st.rerun()  # Rerun to update the UI with new document list and status

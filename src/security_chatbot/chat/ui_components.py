@@ -56,6 +56,19 @@ def process_chat_input() -> None:
     user_input: Union[str, None] = st.chat_input("메시지를 입력하세요...", disabled=session.get_processing_files_status())
 
     if user_input:
+        # --- 사용자 입력 검증 시작 ---
+        # 1. 빈 문자열 또는 공백만 있는 입력 거부
+        if not user_input.strip():
+            st.warning("⚠️ 메시지를 입력해주세요.")
+            return  # 검증 실패 시 함수 종료
+
+        # 2. 입력 길이 검증 (최대 2000자)
+        MAX_INPUT_LENGTH = 2000
+        if len(user_input) > MAX_INPUT_LENGTH:
+            st.warning(f"⚠️ 메시지가 너무 깁니다. 최대 {MAX_INPUT_LENGTH}자까지 입력 가능합니다.")
+            return  # 검증 실패 시 함수 종료
+        # --- 사용자 입력 검증 끝 ---
+
         current_time = datetime.now()
         session.add_chat_message(role="user", content=user_input, timestamp=current_time)
 

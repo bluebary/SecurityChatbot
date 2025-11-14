@@ -13,6 +13,7 @@ from google.api_core.exceptions import GoogleAPIError
 
 from security_chatbot.utils.api_client import GeminiClientManager
 from security_chatbot.config import GEMINI_MODEL_NAME, API_TIMEOUT_SECONDS
+from security_chatbot.utils.error_handler import error_handler, QueryError
 
 logger = logging.getLogger(__name__)
 
@@ -181,27 +182,44 @@ def query_with_rag(query: str, store_name: str) -> Dict[str, Any]:
     except GoogleAPIError as e:
         # Gemini API 관련 오류 처리
         logger.error(f"Gemini API 오류 발생: {e}")
+        error_info = error_handler.handle_error(e, "RAG 쿼리 실행")
         return {
             "content": "",
             "citations": [],
             "success": False,
-            "error": f"Gemini API 오류: {e}"
+            "error": error_info['message'],
+            "solution": error_info['solution']
         }
-    except TimeoutError:
-        # API 호출 타임아웃 오류 처리
-        logger.error(f"Gemini API 호출 타임아웃 발생 (초: {API_TIMEOUT_SECONDS})")
+    except TimeoutError as e:
+        # API 호출 타임아웃 오류 처리, QueryError로 래핑하여 error_handler 사용
+        logger.error(f"Gemini API 호출 타임아웃 발생 (초: {API_TIMEOUT_SECONDS}): {e}")
+        error_info = error_handler.handle_error(QueryError(f"API 호출 타임아웃 발생 (초: {API_TIMEOUT_SECONDS}): {e}"), "RAG 쿼리 실행")
         return {
             "content": "",
             "citations": [],
             "success": False,
-            "error": f"API 호출 타임아웃 발생 (초: {API_TIMEOUT_SECONDS})"
+            "error": error_info['message'],
+            "solution": error_info['solution']
+        }
+    except ValueError as e:
+        # Gemini API 클라이언트 초기화 오류 등 ValueError 처리, QueryError로 래핑하여 error_handler 사용
+        logger.error(f"설정 또는 입력 값 오류 발생: {e}")
+        error_info = error_handler.handle_error(QueryError(f"설정 또는 입력 값 오류: {e}"), "RAG 쿼리 실행")
+        return {
+            "content": "",
+            "citations": [],
+            "success": False,
+            "error": error_info['message'],
+            "solution": error_info['solution']
         }
     except Exception as e:
         # 그 외 예상치 못한 오류 처리
         logger.error(f"예상치 못한 오류 발생: {e}", exc_info=True)
+        error_info = error_handler.handle_error(e, "RAG 쿼리 실행")
         return {
             "content": "",
             "citations": [],
             "success": False,
-            "error": f"예상치 못한 오류 발생: {e}"
+            "error": error_info['message'],
+            "solution": error_info['solution']
         }
