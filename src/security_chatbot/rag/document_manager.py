@@ -1,22 +1,23 @@
-"""
-Document upload and indexing management module for Google Gemini File Search API
+"""Document upload and indexing management module for Google Gemini File Search API
 
 Handles file validation, upload to File Search Store, batch operations,
 and indexing management with chunking configuration.
 """
 
-import os
-import time
 import logging
+import time
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from google import genai
-from google.genai import types
 from google.api_core.exceptions import (
-    NotFound, InvalidArgument, PermissionDenied,
-    InternalServerError, ServiceUnavailable, GoogleAPIError,
-    ResourceExhausted
+    GoogleAPIError,
+    InternalServerError,
+    InvalidArgument,
+    NotFound,
+    PermissionDenied,
+    ResourceExhausted,
+    ServiceUnavailable,
 )
 
 from security_chatbot.utils.api_client import GeminiClientManager
@@ -25,11 +26,11 @@ logger = logging.getLogger(__name__)
 
 # 파일 형식 지원
 SUPPORTED_MIME_TYPES = {
-    '.pdf': 'application/pdf',
-    '.txt': 'text/plain',
-    '.md': 'text/markdown',
-    '.hwp': 'application/x-hwp',
-    '.hwpx': 'application/x-hwp-v5',
+    ".pdf": "application/pdf",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".hwp": "application/x-hwp",
+    ".hwpx": "application/x-hwp-v5",
 }
 
 # 파일 크기 제한 (100MB)
@@ -46,8 +47,7 @@ DEFAULT_OVERLAP_TOKENS = 20
 
 
 class DocumentManager:
-    """
-    Google Gemini File Search Store에 문서를 업로드하고 관리하는 클래스
+    """Google Gemini File Search Store에 문서를 업로드하고 관리하는 클래스
 
     파일 유효성 검증, 단일/배치 업로드, 청킹 설정, 재시도 로직을 제공합니다.
     """
@@ -55,12 +55,11 @@ class DocumentManager:
     def __init__(
         self,
         store_name: str,
-        client: Optional[genai.Client] = None,
+        client: genai.Client | None = None,
         max_tokens_per_chunk: int = DEFAULT_MAX_TOKENS_PER_CHUNK,
-        overlap_tokens: int = DEFAULT_OVERLAP_TOKENS
+        overlap_tokens: int = DEFAULT_OVERLAP_TOKENS,
     ):
-        """
-        DocumentManager 초기화
+        """DocumentManager 초기화
 
         Args:
             store_name: File Search Store의 전체 리소스 이름
@@ -70,6 +69,7 @@ class DocumentManager:
 
         Raises:
             ValueError: client를 초기화할 수 없거나 store_name이 비어있는 경우
+
         """
         if not store_name:
             raise ValueError("store_name은 비어있을 수 없습니다.")
@@ -81,7 +81,9 @@ class DocumentManager:
             raise ValueError("Gemini API 클라이언트를 초기화할 수 없습니다.")
 
         if max_tokens_per_chunk > 2043:
-            logger.warning(f"max_tokens_per_chunk({max_tokens_per_chunk})가 최대값(2043)을 초과하여 2043으로 조정됩니다.")
+            logger.warning(
+                f"max_tokens_per_chunk({max_tokens_per_chunk})가 최대값(2043)을 초과하여 2043으로 조정됩니다."
+            )
             max_tokens_per_chunk = 2043
 
         self.max_tokens_per_chunk = max_tokens_per_chunk
@@ -92,9 +94,8 @@ class DocumentManager:
             f"chunk_size={max_tokens_per_chunk}, overlap={overlap_tokens}"
         )
 
-    def validate_file(self, file_path: str) -> Dict[str, Any]:
-        """
-        파일 유효성 검증 (파일 형식, 크기)
+    def validate_file(self, file_path: str) -> dict[str, Any]:
+        """파일 유효성 검증 (파일 형식, 크기)
 
         Args:
             file_path: 검증할 파일의 경로
@@ -104,6 +105,7 @@ class DocumentManager:
 
         Raises:
             ValueError: 파일이 존재하지 않거나, 크기가 초과하거나, 지원되지 않는 형식인 경우
+
         """
         path = Path(file_path)
 
@@ -124,27 +126,24 @@ class DocumentManager:
         mime_type = SUPPORTED_MIME_TYPES.get(file_ext)
 
         if not mime_type:
-            supported = ', '.join(SUPPORTED_MIME_TYPES.keys())
+            supported = ", ".join(SUPPORTED_MIME_TYPES.keys())
             raise ValueError(
-                f"지원되지 않는 파일 형식입니다: {file_ext}\n"
-                f"지원 형식: {supported}"
+                f"지원되지 않는 파일 형식입니다: {file_ext}\n" f"지원 형식: {supported}"
             )
 
         logger.info(
-            f"파일 검증 성공: {path.name} "
-            f"({file_size / 1024:.2f}KB, {mime_type})"
+            f"파일 검증 성공: {path.name} " f"({file_size / 1024:.2f}KB, {mime_type})"
         )
 
         return {
-            'valid': True,
-            'file_size': file_size,
-            'mime_type': mime_type,
-            'file_name': path.name
+            "valid": True,
+            "file_size": file_size,
+            "mime_type": mime_type,
+            "file_name": path.name,
         }
 
     def _retry_with_backoff(self, func, *args, **kwargs):
-        """
-        Exponential backoff을 사용한 재시도 로직
+        """Exponential backoff을 사용한 재시도 로직
 
         Args:
             func: 실행할 함수
@@ -156,6 +155,7 @@ class DocumentManager:
 
         Raises:
             마지막 시도에서 발생한 예외
+
         """
         delay = INITIAL_RETRY_DELAY
         last_exception = None
@@ -181,12 +181,9 @@ class DocumentManager:
         raise last_exception
 
     def upload_file(
-        self,
-        file_path: str,
-        display_name: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
-        """
-        단일 파일을 File Search Store에 업로드
+        self, file_path: str, display_name: str | None = None
+    ) -> dict[str, Any] | None:
+        """단일 파일을 File Search Store에 업로드
 
         Args:
             file_path: 업로드할 파일의 경로
@@ -201,28 +198,29 @@ class DocumentManager:
         Raises:
             ValueError: 파일 유효성 검증 실패
             GoogleAPIError: API 호출 실패
+
         """
         validation = self.validate_file(file_path)
 
-        file_name = validation['file_name']
+        file_name = validation["file_name"]
         display_name = display_name or file_name
 
         logger.info(f"파일 업로드 시작: {file_name} -> {self.store_name}")
 
         try:
             chunking_config = {
-                'max_tokens_per_chunk': self.max_tokens_per_chunk,
-                'max_overlap_tokens': self.overlap_tokens
+                "max_tokens_per_chunk": self.max_tokens_per_chunk,
+                "max_overlap_tokens": self.overlap_tokens,
             }
 
             def _upload():
-                with open(file_path, 'rb') as f:
+                with open(file_path, "rb") as f:
                     return self.client.files.upload(
                         file=f,
                         config={
-                            'display_name': display_name,
-                            'mime_type': validation['mime_type']
-                        }
+                            "display_name": display_name,
+                            "mime_type": validation["mime_type"],
+                        },
                     )
 
             uploaded_file = self._retry_with_backoff(_upload)
@@ -231,9 +229,7 @@ class DocumentManager:
                 return self.client.file_search_stores.create_corpus_file(
                     parent=self.store_name,
                     file=uploaded_file.name,
-                    config={
-                        'chunking_config': chunking_config
-                    }
+                    config={"chunking_config": chunking_config},
                 )
 
             corpus_file = self._retry_with_backoff(_add_to_store)
@@ -244,9 +240,9 @@ class DocumentManager:
             )
 
             return {
-                'file': uploaded_file,
-                'corpus_file': corpus_file,
-                'corpus_file_name': corpus_file.name
+                "file": uploaded_file,
+                "corpus_file": corpus_file,
+                "corpus_file_name": corpus_file.name,
             }
 
         except ValueError as e:
@@ -262,12 +258,8 @@ class DocumentManager:
             logger.error(f"파일 업로드 중 알 수 없는 오류: {e}")
             raise
 
-    def upload_files_batch(
-        self,
-        file_paths: List[str]
-    ) -> Dict[str, Any]:
-        """
-        여러 파일을 배치로 업로드
+    def upload_files_batch(self, file_paths: list[str]) -> dict[str, Any]:
+        """여러 파일을 배치로 업로드
 
         Args:
             file_paths: 업로드할 파일 경로 리스트
@@ -275,26 +267,20 @@ class DocumentManager:
         Returns:
             업로드 결과 딕셔너리 (success, failed, total)
             - success: 성공한 파일 정보 리스트 (각 항목은 upload_file의 반환값)
+
         """
         logger.info(f"배치 업로드 시작: {len(file_paths)}개 파일")
 
-        results = {
-            'success': [],
-            'failed': [],
-            'total': len(file_paths)
-        }
+        results = {"success": [], "failed": [], "total": len(file_paths)}
 
         for file_path in file_paths:
             try:
                 upload_result = self.upload_file(file_path)
                 if upload_result:
-                    results['success'].append(upload_result)
+                    results["success"].append(upload_result)
             except Exception as e:
                 logger.warning(f"파일 업로드 실패: {file_path} - {e}")
-                results['failed'].append({
-                    'file_path': file_path,
-                    'error': str(e)
-                })
+                results["failed"].append({"file_path": file_path, "error": str(e)})
 
         logger.info(
             f"배치 업로드 완료: "
@@ -305,13 +291,9 @@ class DocumentManager:
         return results
 
     def wait_for_indexing(
-        self,
-        operation_name: str,
-        timeout: int = 300,
-        poll_interval: int = 5
+        self, operation_name: str, timeout: int = 300, poll_interval: int = 5
     ) -> bool:
-        """
-        Operation 폴링을 통해 인덱싱 완료 대기 (Optional)
+        """Operation 폴링을 통해 인덱싱 완료 대기 (Optional)
 
         Args:
             operation_name: 대기할 Operation의 리소스 이름
@@ -320,6 +302,7 @@ class DocumentManager:
 
         Returns:
             인덱싱 완료 시 True, 타임아웃 또는 실패 시 False
+
         """
         logger.info(f"인덱싱 완료 대기 시작: {operation_name}")
 

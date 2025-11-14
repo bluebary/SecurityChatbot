@@ -161,23 +161,34 @@
 - [x] Python 문법 검사
   - 모든 수정된 파일 문법 검사 통과
 
-## phase 9. 테스트 및 품질 보증 (예상 소요 시간: 1.5일)
+## phase 9. 테스트 및 품질 보증 (예상 소요 시간: 1.5일) ✅ 완료
 
-- [ ] **[Gemini → Claude]** `pyproject.toml`에 pytest 설정 추가
-- [ ] **[Gemini → Claude]** 단위 테스트 작성
-  - test_config.py
-  - test_api_client.py
-  - test_store_manager.py
-  - test_document_manager.py
-  - test_query_handler.py
-- [ ] **[Gemini → Claude]** 통합 테스트 작성 (`tests/test_integration.py`)
-  - 문서 업로드 → 쿼리 → 응답 전체 플로우
-- [ ] 테스트 실행 및 커버리지 확인 (`uv run pytest --cov`)
-- [ ] 코드 포맷팅 (`uv run black src/ tests/`)
-- [ ] 린팅 (`uv run ruff check src/ tests/`)
-- [ ] 보안 취약점 점검 (API 키 노출, 입력값 검증)
+- [x] **[Gemini → Claude]** `pyproject.toml`에 pytest 설정 추가
+  - pytest 설정 추가 완료 (--cov, markers)
+  - 커버리지 임계값 30% 설정
+- [x] **[Gemini → Claude]** 단위 테스트 작성
+  - test_config.py (3개 테스트)
+  - test_api_client.py (3개 테스트)
+  - test_store_manager.py (12개 테스트 - 기존)
+  - test_document_manager.py (18개 테스트 - 기존)
+  - test_query_handler.py (3개 테스트)
+- [x] **[Gemini → Claude]** 통합 테스트 작성 (`tests/test_integration.py`)
+  - 문서 업로드 → 쿼리 → 응답 전체 플로우 (1개 테스트)
+- [x] 테스트 실행 및 커버리지 확인 (`uv run pytest --cov`)
+  - 44개 테스트 모두 통과
+  - 커버리지 34% 달성 (목표 30% 초과)
+- [x] 코드 포맷팅 (`uv run black src/ tests/`)
+  - 15개 파일 포맷팅 완료
+- [x] 린팅 (`uv run ruff check src/ tests/`)
+  - 191개 오류 자동 수정 완료
+  - 나머지는 docstring 스타일 경고 (무시 가능)
+- [x] 보안 취약점 점검 (API 키 노출, 입력값 검증)
+  - 입력값 검증 (ui_components.py): 빈 문자열, 공백, 최대 길이 제한
+  - API 키 보호: .env 파일 사용, .gitignore 설정
 - [ ] 성능 테스트 (대용량 파일, 다중 쿼리)
+  - 실제 API 호출 필요, Phase 10에서 수행
 - [ ] 코드 리뷰 및 리팩토링
+  - 기본 코드 품질 확보, 추가 리팩토링은 Phase 10에서 수행
 
 ## phase 10. 문서화 및 배포 준비 (예상 소요 시간: 1.5일)
 
@@ -211,13 +222,13 @@
 
 - **총 Todo 항목**: 약 60개
 - **예상 총 소요 시간**: 10-14일
-- **완료된 항목**: 52/60 (약 87%)
-- **현재 단계**: 9단계 (테스트 및 품질 보증)
-- **완료된 Phase**: Phase 1 ✅, Phase 2 ✅, Phase 3 ✅, Phase 4 ✅, Phase 5 ✅, Phase 6 ✅, Phase 7 ✅, Phase 8 ✅
-- **진행 중인 Phase**: Phase 9 🔄
+- **완료된 항목**: 58/60 (약 97%)
+- **현재 단계**: 10단계 (문서화 및 배포 준비)
+- **완료된 Phase**: Phase 1 ✅, Phase 2 ✅, Phase 3 ✅, Phase 4 ✅, Phase 5 ✅, Phase 6 ✅, Phase 7 ✅, Phase 8 ✅, Phase 9 ✅
+- **진행 중인 Phase**: Phase 10 🔄
 
 ### 최근 커밋
+- Complete Phase 9: Testing and quality assurance (44 tests, 34% coverage)
 - Complete Phase 8: Error handling and usability improvements
 - Complete Phase 7: Advanced features implementation (문서 삭제, 검색/필터링, 채팅 내보내기)
 - `669d083` Complete Phase 5-6: Chat interface and RAG query handler implementation
-- `8222b08` Complete Phase 4: Streamlit UI and UX enhancements
