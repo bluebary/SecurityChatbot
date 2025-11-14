@@ -9,70 +9,75 @@
 
 ---
 
-## phase 1. 프로젝트 초기 설정 (예상 소요 시간: 0.5일)
+## phase 1. 프로젝트 초기 설정 (예상 소요 시간: 0.5일) ✅ 완료
 
-- [ ] uv 설치 확인 (`uv --version`)
-- [ ] Python 3.10으로 프로젝트 초기화 (`uv init`)
-- [ ] `.python-version` 파일 생성 (3.10 명시)
-- [ ] **[Gemini → Claude]** `pyproject.toml` 작성 (프로젝트 메타데이터 및 의존성)
-- [ ] **[Gemini → Claude]** `.gitignore` 생성 (.env, data/documents/, __pycache__, .pytest_cache 등)
-- [ ] **[Gemini → Claude]** `.env.example` 생성 (GEMINI_API_KEY 템플릿)
-- [ ] 디렉토리 구조 생성 (src/security_chatbot/, tests/, data/documents/, docs/)
-- [ ] 초기 의존성 설치 (`uv add google-genai streamlit python-dotenv`)
-- [ ] 개발 의존성 설치 (`uv add --dev pytest pytest-cov black ruff`)
-- [ ] Git 저장소 초기화 및 초기 커밋
+- [x] uv 설치 확인 (`uv --version`)
+- [x] Python 3.10으로 프로젝트 초기화 (`uv init`)
+- [x] `.python-version` 파일 생성 (3.10 명시)
+- [x] **[Gemini → Claude]** `pyproject.toml` 작성 (프로젝트 메타데이터 및 의존성)
+- [x] **[Gemini → Claude]** `.gitignore` 생성 (.env, data/documents/, __pycache__, .pytest_cache 등)
+- [x] **[Gemini → Claude]** `.env.example` 생성 (GEMINI_API_KEY 템플릿)
+- [x] 디렉토리 구조 생성 (src/security_chatbot/, tests/, data/documents/, docs/)
+- [x] 초기 의존성 설치 (`uv add google-genai streamlit python-dotenv`)
+- [x] 개발 의존성 설치 (`uv add --dev pytest pytest-cov black ruff`)
+- [x] Git 저장소 초기화 및 초기 커밋
 
-## phase 2. Gemini API 통합 기본 구조 (예상 소요 시간: 1일)
+## phase 2. Gemini API 통합 기본 구조 (예상 소요 시간: 1일) ✅ 완료
 
-- [ ] **[Gemini → Claude]** `src/security_chatbot/config.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/config.py` 작성
   - 환경 변수 로드 (dotenv)
   - 설정 상수 정의 (API 키, 모델명, 청킹 설정 등)
-- [ ] **[Gemini → Claude]** `src/security_chatbot/utils/api_client.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/utils/api_client.py` 작성
   - Gemini Client 초기화 함수
   - API 연결 검증 함수
-- [ ] **[Gemini → Claude]** `src/security_chatbot/rag/store_manager.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/rag/store_manager.py` 작성
   - File Search Store 생성 함수
   - File Search Store 조회/목록 함수
   - File Search Store 삭제 함수
-- [ ] **[Gemini → Claude]** `tests/test_store_manager.py` 작성
-- [ ] 실제 API 키로 연결 테스트 실행
+- [x] **[Gemini → Claude]** `tests/test_store_manager.py` 작성
+- [x] 실제 API 키로 연결 테스트 실행
 
-## phase 3. 문서 업로드 및 인덱싱 (예상 소요 시간: 1.5일)
+## phase 3. 문서 업로드 및 인덱싱 (예상 소요 시간: 1.5일) ✅ 완료
 
-- [ ] **[Gemini → Claude]** `src/security_chatbot/rag/document_manager.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/rag/document_manager.py` 작성
   - 파일 유효성 검증 함수 (파일 형식, 크기 제한 100MB)
   - 단일 파일 업로드 함수 (File Search Store에 직접 업로드)
   - 배치 파일 업로드 함수
   - Operation 폴링 및 인덱싱 완료 대기 함수(Option으로 사용)
   - 청킹 설정 적용 (max_tokens_per_chunk, overlap)
-- [ ] 에러 핸들링 추가
+- [x] 에러 핸들링 추가
   - 파일 크기 초과
   - 지원되지 않는 파일 형식
   - API 오류
-- [ ] 재시도 로직 구현 (exponential backoff)
-- [ ] **[Gemini → Claude]** `tests/test_document_manager.py` 작성
-- [ ] 파일 형식별 업로드 테스트 (PDF, TXT, MD, HWP, HWPX)
+- [x] 재시도 로직 구현 (exponential backoff)
+- [x] **[Gemini → Claude]** `tests/test_document_manager.py` 작성
+- [x] 파일 형식별 업로드 테스트 (PDF, TXT, MD, HWP, HWPX)
 
-## phase 4. Streamlit UI 기본 구조 (예상 소요 시간: 1일)
+## phase 4. Streamlit UI 기본 구조 (예상 소요 시간: 1일) ✅ 완료
 
-- [ ] **[Gemini → Claude]** `src/security_chatbot/chat/session.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/chat/session.py` 작성
   - 세션 상태 초기화 함수
   - 세션 상태 관리 유틸리티
-- [ ] **[Gemini → Claude]** `src/security_chatbot/main.py` 작성 (Part 1: 기본 레이아웃)
+  - 타임스탬프 및 citations 지원 추가
+- [x] **[Gemini → Claude]** `src/security_chatbot/main.py` 작성 (Part 1: 기본 레이아웃)
   - Streamlit 페이지 설정 (st.set_page_config)
   - 앱 타이틀 및 설명
   - 기본 레이아웃 구조
-- [ ] **[Gemini → Claude]** 사이드바 문서 업로드 UI 구현
+- [x] **[Gemini → Claude]** 사이드바 문서 업로드 UI 구현
   - st.file_uploader (multiple files 지원)
   - 업로드 버튼
   - 업로드 진행 상황 표시 (st.spinner, st.progress)
   - 업로드된 문서 목록 표시
-- [ ] 로컬 테스트 실행 (`uv run streamlit run src/security_chatbot/main.py`)
-- [ ] UI/UX 개선 (레이아웃, 색상, 아이콘)
+- [x] 로컬 테스트 실행 (`uv run streamlit run src/security_chatbot/main.py`)
+- [x] UI/UX 개선 (레이아웃, 색상, 아이콘)
+  - 커스텀 CSS 추가 (블루/퍼플 테마)
+  - 헤더 배너 구현
+  - RAG 상태 표시 개선
+  - 아이콘 및 이모지 개선
 
-## phase 5. 채팅 인터페이스 구현 (예상 소요 시간: 1.5일)
+## phase 5. 채팅 인터페이스 구현 (예상 소요 시간: 1.5일) 🔄 진행 중
 
-- [ ] **[Gemini → Claude]** `src/security_chatbot/chat/ui_components.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/chat/ui_components.py` 작성
   - 채팅 메시지 표시 컴포넌트
   - 채팅 입력 처리 함수
   - 채팅 히스토리 렌더링 함수
@@ -85,9 +90,9 @@
 - [ ] 메시지 타임스탬프 표시
 - [ ] 긴 대화 기록 스크롤 처리
 
-## phase 6. RAG 쿼리 처리 구현 (예상 소요 시간: 2일)
+## phase 6. RAG 쿼리 처리 구현 (예상 소요 시간: 2일) 🔄 진행 중
 
-- [ ] **[Gemini → Claude]** `src/security_chatbot/rag/query_handler.py` 작성
+- [x] **[Gemini → Claude]** `src/security_chatbot/rag/query_handler.py` 작성
   - Gemini File Search 쿼리 함수 (generate_content with tools)
   - 보안 특화 시스템 프롬프트 작성
   - Grounding metadata 파싱 함수
@@ -98,7 +103,7 @@
 - [ ] 응답에 출처 정보 표시 (grounding metadata 활용)
 - [ ] 스트리밍 응답 구현 (선택 사항)
 - [ ] 쿼리 전처리 로직 (공백 제거, 포맷팅)
-- [ ] **[Gemini → Claude]** `tests/test_query_handler.py` 작성
+- [x] **[Gemini → Claude]** `tests/test_query_handler.py` 작성
 - [ ] E2E 테스트 (샘플 보안 PDF 업로드 및 질의)
 
 ## phase 7. 고급 기능 추가 (예상 소요 시간: 1.5일)
@@ -182,5 +187,13 @@
 
 - **총 Todo 항목**: 약 60개
 - **예상 총 소요 시간**: 10-14일
-- **완료된 항목**: 0/60
-- **현재 단계**: 1단계 (프로젝트 초기 설정)
+- **완료된 항목**: 31/60 (약 52%)
+- **현재 단계**: 5-6단계 (채팅 인터페이스 구현 및 RAG 쿼리 처리)
+- **완료된 Phase**: Phase 1 ✅, Phase 2 ✅, Phase 3 ✅, Phase 4 ✅
+- **진행 중인 Phase**: Phase 5 🔄, Phase 6 🔄
+
+### 최근 커밋
+- `e86623d` Complete Phase 3: Document upload and indexing
+- `8fb6a7f` Connection test Complete
+- `299267a` Complete Phase 2: Gemini API integration
+- `5c64401` Complete Phase 1: Project initialization and setup
