@@ -133,3 +133,32 @@ class FileSearchStoreManager:
         except Exception as e:
             logger.error(f"File Search Store 삭제 중 알 수 없는 오류 발생 (name='{store_name}'): {e}")
             return False
+
+    def delete_corpus_file(self, corpus_file_resource_name: str) -> bool:
+        """
+        지정된 File Search Store에서 개별 코퍼스 파일(corpus file)을 삭제합니다.
+
+        Args:
+            corpus_file_resource_name (str): 삭제할 코퍼스 파일의 전체 리소스 이름
+                                              (예: "fileSearchStores/store-id/corpusFiles/file-id")
+
+        Returns:
+            bool: 삭제 성공 시 True, 실패 시 False.
+        """
+        logger.info(f"코퍼스 파일 삭제 시도: corpus_file_resource_name='{corpus_file_resource_name}'")
+        try:
+            self.client.file_search_stores.delete_corpus_file(name=corpus_file_resource_name)
+            logger.info(f"코퍼스 파일 삭제 성공: corpus_file_resource_name='{corpus_file_resource_name}'")
+            return True
+        except NotFound:
+            logger.warning(f"코퍼스 파일 삭제 실패: '{corpus_file_resource_name}'을(를) 찾을 수 없습니다. 이미 삭제되었거나 존재하지 않습니다.")
+            return False
+        except PermissionDenied:
+            logger.error(f"코퍼스 파일 삭제 실패: '{corpus_file_resource_name}'에 대한 권한이 없습니다.")
+            return False
+        except (InvalidArgument, GoogleAPIError) as e:
+            logger.error(f"코퍼스 파일 삭제 중 API 오류 발생 (corpus_file_resource_name='{corpus_file_resource_name}'): {e}")
+            return False
+        except Exception as e:
+            logger.error(f"코퍼스 파일 삭제 중 알 수 없는 오류 발생 (corpus_file_resource_name='{corpus_file_resource_name}'): {e}")
+            return False

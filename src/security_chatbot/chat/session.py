@@ -18,7 +18,8 @@ ChatMessage = Dict[str, Any]
 FileMetadata = Dict[str, Any]
 """
 Represents metadata for an uploaded file.
-Expected keys: 'name' (str), 'size' (int), 'upload_date' (str, ISO format).
+Expected keys: 'name' (str), 'size' (int), 'upload_date' (str, ISO format),
+and 'corpus_file_resource_name' (str, Google Gemini API에서 사용하는 코퍼스 파일의 전체 리소스 이름).
 """
 
 # --- Session State Initialization ---
@@ -133,23 +134,40 @@ def get_uploaded_files_metadata() -> List[FileMetadata]:
     """
     return st.session_state.uploaded_files_metadata
 
-def add_uploaded_file_metadata(file_name: str, file_size: int, upload_datetime: datetime) -> None:
+def add_uploaded_file_metadata(file_name: str, file_size: int, upload_datetime: datetime, corpus_file_resource_name: str) -> None:
     """
-    Adds metadata for a newly uploaded document to the session state.
+    새로 업로드된 문서의 메타데이터를 세션 상태에 추가합니다.
 
     Args:
-        file_name (str): The name of the uploaded file.
-        file_size (int): The size of the uploaded file in bytes.
-        upload_datetime (datetime): The datetime when the file was uploaded.
-                                    It will be stored as an ISO format string.
+        file_name (str): 업로드된 파일의 이름.
+        file_size (int): 업로드된 파일의 크기(바이트).
+        upload_datetime (datetime): 파일이 업로드된 시간. ISO 형식 문자열로 저장됩니다.
+        corpus_file_resource_name (str): Google Gemini API에서 사용하는 코퍼스 파일의 전체 리소스 이름.
     """
     st.session_state.uploaded_files_metadata.append(
         {
             "name": file_name,
             "size": file_size,
-            "upload_date": upload_datetime.isoformat()
+            "upload_date": upload_datetime.isoformat(),
+            "corpus_file_resource_name": corpus_file_resource_name
         }
     )
+
+def remove_uploaded_file_metadata(file_name: str) -> bool:
+    """
+    주어진 파일 이름과 일치하는 업로드된 문서 메타데이터를 세션 상태에서 제거합니다.
+
+    Args:
+        file_name (str): 제거할 파일의 이름.
+
+    Returns:
+        bool: 메타데이터 제거 성공 시 True, 해당 파일을 찾을 수 없으면 False.
+    """
+    initial_count = len(st.session_state.uploaded_files_metadata)
+    st.session_state.uploaded_files_metadata = [
+        f for f in st.session_state.uploaded_files_metadata if f["name"] != file_name
+    ]
+    return len(st.session_state.uploaded_files_metadata) < initial_count
 
 def clear_uploaded_files_metadata() -> None:
     """

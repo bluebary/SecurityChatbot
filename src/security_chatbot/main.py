@@ -7,6 +7,7 @@ Streamlit 기반 보안 챗봇의 메인 애플리케이션 진입점입니다.
 import streamlit as st
 import tempfile
 import os
+import json
 from datetime import datetime
 import pandas as pd
 from google.api_core.exceptions import GoogleAPIError
@@ -188,26 +189,209 @@ def _format_bytes(size: int) -> str:
         size /= 1024
     return f"{size:.2f} PB"
 
-def _display_uploaded_documents() -> None:
-    """Displays a table of uploaded documents and a clear button.
+def _export_chat_as_json() -> str:
+    """
+    현재 채팅 기록을 JSON 형식 문자열로 내보냅니다.
 
-    업로드된 문서 목록을 테이블로 표시하고 삭제 버튼을 제공합니다.
+    Returns:
+        str: JSON 형식의 채팅 기록
+    """
+    messages = session.get_chat_messages()
+    return json.dumps(messages, ensure_ascii=False, indent=2)
+
+def _export_chat_as_txt() -> str:
+    """
+    현재 채팅 기록을 사람이 읽기 쉬운 텍스트 형식 문자열로 내보냅니다.
+
+    Returns:
+        str: 텍스트 형식의 채팅 기록
+    """
+    messages = session.get_chat_messages()
+    export_lines = []
+
+    # 헤더 추가
+    export_lines.append("=== Security Chatbot 대화 기록 ===")
+    export_lines.append(f"내보낸 날짜: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+    for msg in messages:
+        # ISO 형식 문자열을 datetime 객체로 변환하여 포맷팅
+        timestamp_dt = datetime.fromisoformat(msg['timestamp'])
+        formatted_timestamp = timestamp_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        # 역할 표시 (한글로 변환)
+        role_display = "사용자" if msg['role'] == "user" else "어시스턴트"
+        export_lines.append(f"[{formatted_timestamp}] {role_display}:")
+        export_lines.append(f"{msg['content']}\n")
+
+        # 인용이 있는 경우 추가
+        if 'citations' in msg and msg['citations']:
+            export_lines.append("  [참고 자료]:")
+            for citation in msg['citations']:
+                export_lines.append(f"    - {citation}")
+            export_lines.append("")  # 인용 후 한 줄 띄기
+
+    return "\n".join(export_lines)
+
+def _handle_individual_document_deletion(file_name: str, corpus_file_resource_name: str) -> None:
+    """
+    개별 문서를 삭제하는 로직을 처리합니다.
+
+    Args:
+        file_name: 삭제할 파일의 이름
+        corpus_file_resource_name: 삭제할 코퍼스 파일의 리소스 이름
+    """
+    store_display_name, store_resource_name = session.get_file_store_info()
+    if not store_resource_name:
+        st.error("❌ File Search Store ID를 찾을 수 없습니다. 문서를 삭제할 수 없습니다.")
+        return
+
+    store_manager = FileSearchStoreManager()
+    try:
+        delete_success = store_manager.delete_corpus_file(corpus_file_resource_name=corpus_file_resource_name)
+
+        if delete_success:
+            session.remove_uploaded_file_metadata(file_name)
+            st.success(f"✅ 문서 '{file_name}'이(가) 성공적으로 삭제되었습니다.")
+
+            # 모든 문서가 삭제되면 RAG 엔진 비활성화
+            if not session.get_uploaded_files_metadata():
+                session.set_rag_engine_active_status(False)
+                st.info("모든 문서가 삭제되어 RAG 엔진이 비활성화되었습니다.")
+        else:
+            st.error(f"❌ 문서 '{file_name}' 삭제에 실패했습니다. 로그를 확인해주세요.")
+
+    except Exception as e:
+        st.error(f"❌ 문서 '{file_name}' 삭제 중 예상치 못한 오류 발생: {e}")
+    finally:
+        # 확인 상태 초기화
+        if 'confirm_delete_file_name' in st.session_state:
+            del st.session_state['confirm_delete_file_name']
+        if 'confirm_delete_corpus_resource_name' in st.session_state:
+            del st.session_state['confirm_delete_corpus_resource_name']
+        st.rerun()
+
+def _handle_delete_all_documents() -> None:
+    """
+    모든 문서를 삭제하고 스토어 정보를 초기화합니다.
+    """
+    store_display_name, store_resource_name = session.get_file_store_info()
+    if store_resource_name:
+        store_manager = FileSearchStoreManager()
+        try:
+            if store_manager.delete_store(store_resource_name):
+                st.success(f"✅ File Search Store '{store_display_name}'가 성공적으로 삭제되었습니다.")
+            else:
+                st.warning(f"⚠️ File Search Store '{store_display_name}' 삭제에 실패했거나 찾을 수 없습니다.")
+        except Exception as e:
+            st.error(f"❌ File Search Store 삭제 중 오류 발생: {e}")
+
+    session.clear_uploaded_files_metadata()
+    session.clear_file_store_info()
+    session.set_rag_engine_active_status(False)
+    st.success("모든 업로드된 문서와 스토어 정보가 삭제되었습니다.")
+
+    # 확인 상태 초기화
+    if 'confirm_delete_all_docs' in st.session_state:
+        del st.session_state['confirm_delete_all_docs']
+    st.rerun()
+
+def _display_uploaded_documents() -> None:
+    """
+    업로드된 문서 목록을 표시하고 개별/전체 삭제 버튼을 제공합니다.
+    검색 기능을 통해 파일명으로 필터링할 수 있습니다.
     """
     uploaded_files_metadata = session.get_uploaded_files_metadata()
-    if uploaded_files_metadata:
-        st.subheader("📄 업로드된 문서")
-        df = pd.DataFrame(uploaded_files_metadata)
-        df['size'] = df['size'].apply(_format_bytes)
-        df['upload_date'] = pd.to_datetime(df['upload_date']).dt.strftime('%Y-%m-%d %H:%M')
-        df.columns = ['파일명', '크기', '업로드 날짜']
-        st.dataframe(df, use_container_width=True, hide_index=True)
 
-        if st.button("🗑️ 모든 문서 삭제", key="clear_all_docs"):
-            session.clear_uploaded_files_metadata()
-            session.clear_file_store_info()
-            session.set_rag_engine_active_status(False)
-            st.success("모든 업로드된 문서와 스토어 정보가 삭제되었습니다.")
-            st.rerun()
+    if not uploaded_files_metadata:
+        st.info("업로드된 문서가 없습니다.")
+        return
+
+    st.subheader("📄 업로드된 문서")
+
+    # 검색 기능 추가
+    search_query = st.text_input(
+        "파일명으로 검색",
+        "",
+        help="업로드된 문서 목록을 파일명으로 필터링합니다.",
+        key="document_search_input"
+    )
+
+    # 검색어에 따라 문서 필터링 (대소문자 구분 없음)
+    if search_query:
+        filtered_files_metadata = [
+            file_meta for file_meta in uploaded_files_metadata
+            if search_query.lower() in file_meta['name'].lower()
+        ]
+    else:
+        filtered_files_metadata = uploaded_files_metadata
+
+    # 개별 파일 삭제 확인 UI (맨 위에 표시)
+    if 'confirm_delete_file_name' in st.session_state and st.session_state.get('confirm_delete_file_name'):
+        file_to_delete = st.session_state['confirm_delete_file_name']
+        corpus_resource_to_delete = st.session_state['confirm_delete_corpus_resource_name']
+
+        st.warning(f"⚠️ 정말로 문서 '{file_to_delete}'을(를) 삭제하시겠습니까?")
+        col1, col2 = st.columns([0.1, 0.9])
+        with col1:
+            if st.button("예", key=f"confirm_yes_delete_{file_to_delete}"):
+                _handle_individual_document_deletion(file_to_delete, corpus_resource_to_delete)
+        with col2:
+            if st.button("아니오", key=f"confirm_no_delete_{file_to_delete}"):
+                del st.session_state['confirm_delete_file_name']
+                del st.session_state['confirm_delete_corpus_resource_name']
+                st.rerun()
+
+    # 검색 결과 표시
+    if not filtered_files_metadata:
+        st.info("검색 결과가 없습니다.")
+    else:
+        # 문서 목록 테이블 (개별 삭제 버튼 포함)
+        col_header1, col_header2, col_header3, col_header4 = st.columns([0.45, 0.15, 0.25, 0.15])
+        with col_header1:
+            st.markdown("**파일명**")
+        with col_header2:
+            st.markdown("**크기**")
+        with col_header3:
+            st.markdown("**업로드 날짜**")
+        with col_header4:
+            st.markdown("**삭제**")
+
+        for i, file_meta in enumerate(filtered_files_metadata):
+            file_name = file_meta['name']
+            file_size_formatted = _format_bytes(file_meta['size'])
+            upload_date_formatted = pd.to_datetime(file_meta['upload_date']).strftime('%Y-%m-%d %H:%M')
+            corpus_file_resource_name = file_meta['corpus_file_resource_name']
+
+            col1, col2, col3, col4 = st.columns([0.45, 0.15, 0.25, 0.15])
+            with col1:
+                st.write(file_name)
+            with col2:
+                st.write(file_size_formatted)
+            with col3:
+                st.write(upload_date_formatted)
+            with col4:
+                if st.button("🗑️", key=f"delete_doc_{i}_{file_name}", help=f"'{file_name}' 문서 삭제"):
+                    st.session_state['confirm_delete_file_name'] = file_name
+                    st.session_state['confirm_delete_corpus_resource_name'] = corpus_file_resource_name
+                    st.rerun()
+
+    st.markdown("---")
+
+    # 모든 문서 삭제 버튼 및 확인 UI
+    if st.button("🗑️ 모든 문서 삭제", key="clear_all_docs_trigger"):
+        st.session_state['confirm_delete_all_docs'] = True
+        st.rerun()
+
+    if st.session_state.get('confirm_delete_all_docs', False):
+        st.warning("⚠️ 모든 문서를 삭제하고 File Search Store를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+        col1, col2 = st.columns([0.2, 0.8])
+        with col1:
+            if st.button("예 (모두 삭제)", key="confirm_clear_all_docs_yes"):
+                _handle_delete_all_documents()
+        with col2:
+            if st.button("아니오 (취소)", key="confirm_clear_all_docs_no"):
+                del st.session_state['confirm_delete_all_docs']
+                st.rerun()
 
 def _handle_document_upload(uploaded_files: list[st.runtime.uploaded_file_manager.UploadedFile]) -> None:
     """
@@ -276,13 +460,14 @@ def _handle_document_upload(uploaded_files: list[st.runtime.uploaded_file_manage
                         raise ValueError(f"파일 검증 실패: {uploaded_file.name} - {file_validation.get('error', '알 수 없는 오류')}")
 
                     st.info(f"📤 '{uploaded_file.name}' 업로드 중...")
-                    uploaded_doc = doc_manager.upload_file(temp_file_path, display_name=uploaded_file.name)
+                    upload_result = doc_manager.upload_file(temp_file_path, display_name=uploaded_file.name)
 
-                    if uploaded_doc:
+                    if upload_result and upload_result.get('corpus_file_name'):
                         session.add_uploaded_file_metadata(
                             file_name=uploaded_file.name,
                             file_size=uploaded_file.size,
-                            upload_datetime=datetime.now()
+                            upload_datetime=datetime.now(),
+                            corpus_file_resource_name=upload_result['corpus_file_name']
                         )
                         successful_uploads.append(uploaded_file.name)
                         files_uploaded_count += 1
@@ -386,6 +571,38 @@ def main() -> None:
             session.clear_chat_messages()
             st.success("채팅 기록이 초기화되었습니다.")
             st.rerun()
+
+        # 채팅 내보내기 기능
+        with st.expander("📥 채팅 내보내기", expanded=False):
+            chat_messages = session.get_chat_messages()
+            export_disabled = not chat_messages
+
+            if export_disabled:
+                st.info("내보낼 채팅 기록이 없습니다.")
+            else:
+                current_time_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+                # JSON 내보내기 버튼
+                st.download_button(
+                    label="📥 JSON으로 내보내기",
+                    data=_export_chat_as_json(),
+                    file_name=f"chat_export_{current_time_str}.json",
+                    mime="application/json",
+                    disabled=export_disabled,
+                    key="export_json_button",
+                    help="전체 채팅 기록을 JSON 파일로 내보냅니다."
+                )
+
+                # TXT 내보내기 버튼
+                st.download_button(
+                    label="📥 TXT로 내보내기",
+                    data=_export_chat_as_txt(),
+                    file_name=f"chat_export_{current_time_str}.txt",
+                    mime="text/plain",
+                    disabled=export_disabled,
+                    key="export_txt_button",
+                    help="전체 채팅 기록을 사람이 읽기 쉬운 텍스트 파일로 내보냅니다."
+                )
 
     # 메인 영역
     st.subheader("💬 채팅 인터페이스")

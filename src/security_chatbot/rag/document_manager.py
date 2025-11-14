@@ -184,7 +184,7 @@ class DocumentManager:
         self,
         file_path: str,
         display_name: Optional[str] = None
-    ) -> Optional[types.File]:
+    ) -> Optional[Dict[str, Any]]:
         """
         단일 파일을 File Search Store에 업로드
 
@@ -193,7 +193,10 @@ class DocumentManager:
             display_name: 파일의 표시 이름 (기본값: 파일명)
 
         Returns:
-            업로드된 File 객체 또는 실패 시 None
+            업로드된 파일 정보 딕셔너리 (file, corpus_file) 또는 실패 시 None
+            - file: 업로드된 File 객체
+            - corpus_file: Store에 추가된 CorpusFile 객체
+            - corpus_file_name: CorpusFile의 리소스 이름 (삭제 시 사용)
 
         Raises:
             ValueError: 파일 유효성 검증 실패
@@ -240,7 +243,11 @@ class DocumentManager:
                 f"(file={uploaded_file.name}, corpus_file={corpus_file.name})"
             )
 
-            return uploaded_file
+            return {
+                'file': uploaded_file,
+                'corpus_file': corpus_file,
+                'corpus_file_name': corpus_file.name
+            }
 
         except ValueError as e:
             logger.error(f"파일 검증 실패: {e}")
@@ -267,6 +274,7 @@ class DocumentManager:
 
         Returns:
             업로드 결과 딕셔너리 (success, failed, total)
+            - success: 성공한 파일 정보 리스트 (각 항목은 upload_file의 반환값)
         """
         logger.info(f"배치 업로드 시작: {len(file_paths)}개 파일")
 
@@ -278,9 +286,9 @@ class DocumentManager:
 
         for file_path in file_paths:
             try:
-                uploaded_file = self.upload_file(file_path)
-                if uploaded_file:
-                    results['success'].append(file_path)
+                upload_result = self.upload_file(file_path)
+                if upload_result:
+                    results['success'].append(upload_result)
             except Exception as e:
                 logger.warning(f"파일 업로드 실패: {file_path} - {e}")
                 results['failed'].append({
