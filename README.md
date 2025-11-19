@@ -78,6 +78,14 @@ SecurityChatbot은 **Google Gemini File Search API**를 활용하여 보안 관�
 - 사용자 친화적 에러 메시지 및 해결 방법 제공
 - 입력값 검증 (빈 문자열, 최대 길이 제한)
 
+### 8. 개선된 로깅 시스템
+- **파일 로깅**: 모든 로그를 `logs/` 디렉토리에 자동 저장
+  - `app.log`: 모든 레벨의 로그 (DEBUG 이상)
+  - `error.log`: 에러만 기록 (ERROR 이상)
+- **로그 로테이션**: 파일 크기 기반 자동 로테이션 (10MB, 최대 5개 백업)
+- **상세한 로그 포맷**: 파일명, 함수명, 라인 번호 포함
+- **환경 변수 제어**: 로그 레벨, 파일 로깅 활성화/비활성화 등 설정 가능
+
 ---
 
 ## 🛠 기술 스택
@@ -193,6 +201,12 @@ cp .env.example .env
 ```bash
 # .env 파일에 발급받은 API 키 입력
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# 선택사항: 로깅 설정
+LOG_LEVEL=INFO                  # 로그 레벨 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+FILE_LOGGING_ENABLED=true       # 파일 로깅 활성화 여부
+LOG_MAX_BYTES=10485760          # 로그 파일 최대 크기 (10MB)
+LOG_BACKUP_COUNT=5              # 백업 파일 개수
 ```
 
 ⚠️ **주의**: `.env` 파일은 절대 Git에 커밋하지 마세요! (`.gitignore`에 포함되어 있습니다)
@@ -298,6 +312,10 @@ SecurityChatbot/
 │
 ├── data/
 │   └── documents/                # 업로드된 문서 (gitignored)
+│
+├── logs/                         # 로그 파일 (gitignored)
+│   ├── app.log                   # 전체 로그
+│   └── error.log                 # 에러 로그만
 │
 ├── tests/                        # 테스트 파일
 │   ├── __init__.py
@@ -448,6 +466,34 @@ streamlit run src/security_chatbot/main.py
 **해결 방법**:
 - 관련 없는 문서는 삭제하여 검색 범위를 줄입니다.
 - 짧고 명확한 질문을 작성합니다.
+
+### 7. 로그 파일 확인 및 디버깅
+
+**로그 파일 위치**: `logs/app.log`, `logs/error.log`
+
+**실시간 로그 모니터링**:
+```bash
+# 전체 로그 실시간 확인
+tail -f logs/app.log
+
+# 에러 로그만 확인
+tail -f logs/error.log
+
+# 특정 키워드 검색
+grep "ERROR" logs/app.log
+```
+
+**로그 레벨 변경**:
+```bash
+# .env 파일에서 설정
+LOG_LEVEL=DEBUG  # 더 상세한 로그 출력
+```
+
+**로그 비활성화** (성능 향상):
+```bash
+# .env 파일에서 설정
+FILE_LOGGING_ENABLED=false
+```
 
 ---
 

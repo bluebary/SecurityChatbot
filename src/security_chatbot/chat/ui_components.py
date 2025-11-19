@@ -139,8 +139,26 @@ def process_chat_input() -> None:
                         )
                     else:
                         # 오류 발생
-                        error_message = f"❌ 오류가 발생했습니다: {rag_response.get('error', '알 수 없는 오류')}"
-                        st.error(error_message)
+                        error_type = rag_response.get('error_type', '')
+
+                        if error_type == 'quota_exceeded':
+                            # API 사용량 초과 특별 처리
+                            error_message = "⚠️ API 사용량을 초과하였습니다"
+                            st.error(error_message)
+                            st.warning(
+                                "Gemini API의 무료 사용량을 초과했습니다. "
+                                "잠시 후 다시 시도해주세요."
+                            )
+                            retry_delay = rag_response.get('retry_delay', '잠시 후')
+                            if retry_delay != '잠시 후':
+                                st.info(f"💡 추천 재시도 대기 시간: {retry_delay}")
+                        else:
+                            # 일반 오류 처리
+                            error_message = f"❌ 오류가 발생했습니다: {rag_response.get('error', '알 수 없는 오류')}"
+                            st.error(error_message)
+                            if 'solution' in rag_response:
+                                st.info(f"💡 해결 방법: {rag_response['solution']}")
+
                         st.markdown(
                             f"<p class='chat-timestamp'>{datetime.now().isoformat()}</p>",
                             unsafe_allow_html=True,
@@ -164,5 +182,3 @@ def process_chat_input() -> None:
             session.add_chat_message(
                 role="assistant", content=assistant_response, timestamp=datetime.now()
             )
-
-        st.rerun()

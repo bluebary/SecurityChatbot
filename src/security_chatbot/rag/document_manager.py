@@ -209,8 +209,10 @@ class DocumentManager:
 
         try:
             chunking_config = {
-                "max_tokens_per_chunk": self.max_tokens_per_chunk,
-                "max_overlap_tokens": self.overlap_tokens,
+                "white_space_config": {
+                    "max_tokens_per_chunk": self.max_tokens_per_chunk,
+                    "max_overlap_tokens": self.overlap_tokens,
+                }
             }
 
             def _upload():
@@ -226,9 +228,9 @@ class DocumentManager:
             uploaded_file = self._retry_with_backoff(_upload)
 
             def _add_to_store():
-                return self.client.file_search_stores.create_corpus_file(
-                    parent=self.store_name,
-                    file=uploaded_file.name,
+                return self.client.file_search_stores.import_file(
+                    file_search_store_name=self.store_name,
+                    file_name=uploaded_file.name,
                     config={"chunking_config": chunking_config},
                 )
 

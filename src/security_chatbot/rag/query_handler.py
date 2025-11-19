@@ -8,6 +8,7 @@ from typing import Any
 
 from google.api_core.exceptions import GoogleAPIError
 from google.genai import types
+from google.genai.errors import ClientError
 
 from security_chatbot.config import API_TIMEOUT_SECONDS, GEMINI_MODEL_NAME
 from security_chatbot.utils.api_client import GeminiClientManager
@@ -189,8 +190,45 @@ def query_with_rag(query: str, store_name: str) -> dict[str, Any]:
 
         return formatted_response
 
+    except ClientError as e:
+        # Gemini API ClientError 처리 (429 에러 포함)
+        if e.code == 429:
+            # API 사용량 초과 에러 특별 처리
+            logger.error(f"Gemini API 사용량 초과: {e}")
+            retry_delay = "잠시 후"
+            try:
+                # RetryInfo에서 재시도 대기 시간 추출
+                error_dict = e.details if hasattr(e, 'details') else {}
+                if isinstance(error_dict, dict):
+                    for detail in error_dict.get('details', []):
+                        if detail.get('@type') == 'type.googleapis.com/google.rpc.RetryInfo':
+                            retry_delay = detail.get('retryDelay', '잠시 후')
+                            break
+            except Exception:
+                pass
+
+            return {
+                "content": "",
+                "citations": [],
+                "success": False,
+                "error": "API 사용량 초과",
+                "error_type": "quota_exceeded",
+                "retry_delay": retry_delay,
+                "solution": "Gemini API의 무료 사용량을 초과했습니다. 잠시 후 다시 시도해주세요.",
+            }
+        else:
+            # 기타 ClientError 처리
+            logger.error(f"Gemini API 오류 발생: {e}")
+            error_info = error_handler.handle_error(e, "RAG 쿼리 실행")
+            return {
+                "content": "",
+                "citations": [],
+                "success": False,
+                "error": error_info["message"],
+                "solution": error_info["solution"],
+            }
     except GoogleAPIError as e:
-        # Gemini API 관련 오류 처리
+        # 기타 Gemini API 관련 오류 처리
         logger.error(f"Gemini API 오류 발생: {e}")
         error_info = error_handler.handle_error(e, "RAG 쿼리 실행")
         return {

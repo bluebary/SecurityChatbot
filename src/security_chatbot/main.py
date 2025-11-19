@@ -20,43 +20,43 @@ from security_chatbot.utils.error_handler import error_handler
 # --- Custom CSS ---
 CUSTOM_CSS = """
 <style>
-    /* General body styling */
+    /* General body styling - Dark Theme */
     html, body {
         font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        color: #333333; /* Dark grey text */
+        color: #E0E0E0; /* Light grey text for dark background */
     }
 
-    /* Streamlit main content area */
+    /* Streamlit main content area - Black background */
     .stApp {
-        background-color: #f0f2f6; /* Light grey background */
+        background-color: #000000; /* Black background */
     }
 
-    /* Sidebar styling */
+    /* Sidebar styling - Dark Theme */
     .st-emotion-cache-1ldfecr { /* Target sidebar by class, might change in future Streamlit versions */
-        background-color: #e0e6ed; /* Slightly darker grey for sidebar */
+        background-color: #1a1a1a; /* Very dark grey for sidebar */
         padding: 1rem;
-        border-right: 1px solid #c0c8d1;
+        border-right: 1px solid #333333;
     }
 
-    /* Header/Title styling */
+    /* Header/Title styling - Light text for dark background */
     h1 {
-        color: #2c3e50; /* Darker blue-grey for main title */
+        color: #FFFFFF; /* White for main title */
         font-weight: 600;
         margin-bottom: 0.5rem;
     }
 
     h2, h3 {
-        color: #34495e; /* Slightly lighter blue-grey for subheaders */
+        color: #D0D0D0; /* Light grey for subheaders */
     }
 
-    /* Custom banner style */
+    /* Custom banner style - Dark Theme */
     .banner-container {
-        background-color: #4a90e2; /* A shade of blue */
+        background-color: #1e3a5f; /* Dark blue */
         color: white;
         padding: 1.5rem;
         border-radius: 8px;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
         text-align: center;
     }
     .banner-container h1 {
@@ -65,23 +65,25 @@ CUSTOM_CSS = """
         margin-bottom: 0.5rem;
     }
     .banner-container p {
-        color: #e0e0e0;
+        color: #C0C0C0;
         font-size: 1.1em;
     }
 
-    /* Chat message styling */
+    /* Chat message styling - Dark Theme */
     .stChatMessage {
         border-radius: 15px;
         padding: 10px 15px;
         margin-bottom: 10px;
     }
     .stChatMessage[data-testid="stChatMessage-user"] {
-        background-color: #d1e7ff; /* Light blue for user messages */
+        background-color: #1a3a5a; /* Dark blue for user messages */
         border-top-right-radius: 2px;
+        color: #E0E0E0;
     }
     .stChatMessage[data-testid="stChatMessage-assistant"] {
-        background-color: #f8f9fa; /* Off-white for assistant messages */
+        background-color: #1a1a1a; /* Dark grey for assistant messages */
         border-top-left-radius: 2px;
+        color: #E0E0E0;
     }
     .chat-timestamp {
         font-size: 0.75em;
@@ -91,21 +93,21 @@ CUSTOM_CSS = """
     }
     .chat-citation {
         font-size: 0.8em;
-        color: #555555;
+        color: #B0B0B0;
         border-left: 3px solid #4a90e2;
         padding-left: 10px;
         margin-top: 10px;
-        background-color: #e6f2ff;
+        background-color: #1a2a3a;
         border-radius: 0 5px 5px 0;
     }
     .chat-citation p {
         margin: 0;
     }
 
-    /* RAG status indicator */
+    /* RAG status indicator - Dark Theme */
     .rag-status-active {
-        background-color: #d4edda; /* Light green */
-        color: #155724; /* Dark green */
+        background-color: #1a4d2e; /* Dark green */
+        color: #90ee90; /* Light green */
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
         font-weight: bold;
@@ -114,8 +116,8 @@ CUSTOM_CSS = """
         gap: 0.5rem;
     }
     .rag-status-inactive {
-        background-color: #f8d7da; /* Light red */
-        color: #721c24; /* Dark red */
+        background-color: #4d1a1a; /* Dark red */
+        color: #ffb3b3; /* Light red */
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
         font-weight: bold;
@@ -124,9 +126,9 @@ CUSTOM_CSS = """
         gap: 0.5rem;
     }
 
-    /* Streamlit button styling */
+    /* Streamlit button styling - Dark Theme */
     .stButton>button {
-        background-color: #4a90e2; /* Blue button */
+        background-color: #2e5a8a; /* Dark blue button */
         color: white;
         border-radius: 5px;
         border: none;
@@ -134,38 +136,61 @@ CUSTOM_CSS = """
         transition: background-color 0.2s;
     }
     .stButton>button:hover {
-        background-color: #357ABD; /* Darker blue on hover */
+        background-color: #4a90e2; /* Lighter blue on hover */
         color: white;
     }
     .stButton>button:disabled {
-        background-color: #cccccc;
+        background-color: #333333;
         color: #666666;
     }
 
-    /* Streamlit info/success/warning messages */
+    /* Streamlit info/success/warning messages - Dark Theme */
     .stAlert {
         border-radius: 8px;
     }
     .stAlert.info {
-        background-color: #e6f2ff; /* Lighter blue for info */
+        background-color: #1a2a3a; /* Dark blue for info */
         border-left: 5px solid #4a90e2;
+        color: #C0C0C0;
     }
     .stAlert.success {
-        background-color: #d4edda;
+        background-color: #1a3a1a;
         border-left: 5px solid #28a745;
+        color: #C0C0C0;
     }
     .stAlert.warning {
-        background-color: #fff3cd;
+        background-color: #3a3a1a;
         border-left: 5px solid #ffc107;
+        color: #C0C0C0;
     }
     .stAlert.error {
-        background-color: #f8d7da;
+        background-color: #3a1a1a;
         border-left: 5px solid #dc3545;
+        color: #C0C0C0;
     }
 
-    /* Progress bar styling */
+    /* Progress bar styling - Dark Theme */
     .stProgress > div > div > div > div {
         background-color: #4a90e2; /* Blue progress bar */
+    }
+
+    /* Additional dark theme adjustments */
+    .stMarkdown, .stText, p, span, div {
+        color: #E0E0E0 !important;
+    }
+
+    /* Input fields dark theme */
+    .stTextInput input, .stTextArea textarea {
+        background-color: #1a1a1a !important;
+        color: #E0E0E0 !important;
+        border-color: #333333 !important;
+    }
+
+    /* Chat input dark theme */
+    .stChatInput textarea {
+        background-color: #1a1a1a !important;
+        color: #E0E0E0 !important;
+        border-color: #333333 !important;
     }
 </style>
 """
@@ -291,7 +316,6 @@ def _handle_individual_document_deletion(
             del st.session_state["confirm_delete_file_name"]
         if "confirm_delete_corpus_resource_name" in st.session_state:
             del st.session_state["confirm_delete_corpus_resource_name"]
-        st.rerun()
 
 
 def _handle_delete_all_documents() -> None:
@@ -335,7 +359,6 @@ def _handle_delete_all_documents() -> None:
     # 확인 상태 초기화
     if "confirm_delete_all_docs" in st.session_state:
         del st.session_state["confirm_delete_all_docs"]
-    st.rerun()
 
 
 def _display_uploaded_documents() -> None:
@@ -388,7 +411,6 @@ def _display_uploaded_documents() -> None:
             if st.button("아니오", key=f"confirm_no_delete_{file_to_delete}"):
                 del st.session_state["confirm_delete_file_name"]
                 del st.session_state["confirm_delete_corpus_resource_name"]
-                st.rerun()
 
     # 검색 결과 표시
     if not filtered_files_metadata:
@@ -432,14 +454,12 @@ def _display_uploaded_documents() -> None:
                     st.session_state["confirm_delete_corpus_resource_name"] = (
                         corpus_file_resource_name
                     )
-                    st.rerun()
 
     st.markdown("---")
 
     # 모든 문서 삭제 버튼 및 확인 UI
     if st.button("🗑️ 모든 문서 삭제", key="clear_all_docs_trigger"):
         st.session_state["confirm_delete_all_docs"] = True
-        st.rerun()
 
     if st.session_state.get("confirm_delete_all_docs", False):
         st.warning(
@@ -452,7 +472,6 @@ def _display_uploaded_documents() -> None:
         with col2:
             if st.button("아니오 (취소)", key="confirm_clear_all_docs_no"):
                 del st.session_state["confirm_delete_all_docs"]
-                st.rerun()
 
 
 def _handle_document_upload(
@@ -675,7 +694,6 @@ def _handle_document_upload(
             )
     finally:
         session.set_processing_files_status(False)
-        st.rerun()  # Rerun to update the UI with new document list and status
 
 
 def main() -> None:
@@ -749,7 +767,6 @@ def main() -> None:
         ):
             session.clear_chat_messages()
             st.success("채팅 기록이 초기화되었습니다.")
-            st.rerun()
 
         # 채팅 내보내기 기능
         with st.expander("📥 채팅 내보내기", expanded=False):
