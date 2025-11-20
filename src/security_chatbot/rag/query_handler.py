@@ -1,17 +1,14 @@
-"""SecurityChatbot RAG Query Handler
-
-Gemini File Search API를 사용하여 RAG 기반 쿼리를 처리하고 응답을 생성합니다.
-"""
-
 import logging
 from typing import Any
 
+import google.genai as genai
 from google.api_core.exceptions import GoogleAPIError
-from google.genai import types
-from google.genai.errors import ClientError
 
-from security_chatbot.config import API_TIMEOUT_SECONDS, GEMINI_MODEL_NAME
-from security_chatbot.utils.api_client import GeminiClientManager
+from security_chatbot.config import (
+    API_TIMEOUT_SECONDS,
+    GEMINI_API_KEY,
+    GEMINI_MODEL_NAME,
+)
 from security_chatbot.utils.error_handler import QueryError, error_handler
 
 logger = logging.getLogger(__name__)
@@ -29,7 +26,7 @@ SECURITY_SYSTEM_PROMPT = """
 """
 
 
-def parse_grounding_metadata(response: types.GenerateContentResponse) -> list[str]:
+def parse_grounding_metadata(response: genai.types.GenerateContentResponse) -> list[str]:
     """Grounding metadata에서 출처 정보를 추출합니다.
 
     Args:
@@ -91,7 +88,7 @@ def parse_grounding_metadata(response: types.GenerateContentResponse) -> list[st
 
 
 def format_response(
-    response: types.GenerateContentResponse, citations: list[str]
+    response: genai.types.GenerateContentResponse, citations: list[str]
 ) -> dict[str, Any]:
     """Gemini 응답을 표준화된 딕셔너리 형태로 포맷팅합니다.
 
@@ -154,18 +151,19 @@ def query_with_rag(query: str, store_name: str) -> dict[str, Any]:
 
     """
     try:
-        # Gemini 클라이언트 가져오기
-        client = GeminiClientManager.get_client()
-        if not client:
-            raise ValueError("Gemini API 클라이언트를 초기화할 수 없습니다.")
+        if not GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-        # File Search Tool 설정
-        file_search_tool = types.Tool(
-            file_search=types.FileSearch(file_search_store_names=[store_name])
+        # File Search Tool을 genai.types.Tool 객체로 정의
+        file_search_tool = genai.types.Tool(
+            file_search=genai.types.FileSearch(
+                file_search_store_names=[store_name]
+            )
         )
 
         # 모델 생성 설정
-        generate_content_config = types.GenerateContentConfig(
+        generate_content_config = genai.types.GenerateContentConfig(
             system_instruction=SECURITY_SYSTEM_PROMPT,
             temperature=0.2,  # RAG에서는 사실 기반 답변을 위해 낮은 temperature 사용
             tools=[file_search_tool],
@@ -174,7 +172,9 @@ def query_with_rag(query: str, store_name: str) -> dict[str, Any]:
         # 쿼리 실행
         logger.info(f"RAG 쿼리 실행 중: '{query[:50]}...' (Store: {store_name})")
         response = client.models.generate_content(
-            model=GEMINI_MODEL_NAME, contents=query, config=generate_content_config
+            model=GEMINI_MODEL_NAME,
+            contents=query,
+            config=generate_content_config,
         )
 
         # 응답 처리 및 포맷팅
@@ -190,7 +190,7 @@ def query_with_rag(query: str, store_name: str) -> dict[str, Any]:
 
         return formatted_response
 
-    except ClientError as e:
+    except genai.errors.ClientError as e:
         # Gemini API ClientError 처리 (429 에러 포함)
         if e.code == 429:
             # API 사용량 초과 에러 특별 처리
@@ -198,11 +198,14 @@ def query_with_rag(query: str, store_name: str) -> dict[str, Any]:
             retry_delay = "잠시 후"
             try:
                 # RetryInfo에서 재시도 대기 시간 추출
-                error_dict = e.details if hasattr(e, 'details') else {}
+                error_dict = e.details if hasattr(e, "details") else {}
                 if isinstance(error_dict, dict):
-                    for detail in error_dict.get('details', []):
-                        if detail.get('@type') == 'type.googleapis.com/google.rpc.RetryInfo':
-                            retry_delay = detail.get('retryDelay', '잠시 후')
+                    for detail in error_dict.get("details", []):
+                        if (
+                            detail.get("@type")
+                            == "type.googleapis.com/google.rpc.RetryInfo"
+                        ):
+                            retry_delay = detail.get("retryDelay", "잠시 후")
                             break
             except Exception:
                 pass
